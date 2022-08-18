@@ -217,7 +217,7 @@ def Text2Tasks_Parallelized(df,TaskVar='Task',chunksize=1000,joblib_n_jobs=-1,jo
     return Tasks_dobj, hierarchies_dobj, df2
      
 # For analysis of tasks and most common tasks by year, construct dataset at the Occupation by Extracted Task level 
-def DataOccTaskLevel(df,OccVar="O*NET-SOC Code",otherVars=['Task ID','Task Type','Incumbents Responding','Domain Source'],WordNetLevel=None,TaskVar='Task',NewTaskVar='Occupation_VerbNouns'):
+def DataOccTaskLevel(df_o,OccVar="O*NET-SOC Code",otherVars=['Task ID','Task Type','Incumbents Responding','Domain Source'],WordNetLevel=None,TaskVar='Task',NewTaskVar='Occupation_VerbNouns'):
     '''
     Construct a dataset of occupations and tasks. 
     *********************************************
@@ -230,6 +230,8 @@ def DataOccTaskLevel(df,OccVar="O*NET-SOC Code",otherVars=['Task ID','Task Type'
         TaskTupleVar = 'VerbNouns_dobj_NounLevel_'+str(WordNetLevel)
 
     # Split up Tasks
+    df = df_o.copy()
+    df.loc[(pd.isna(df[TaskTupleVar]))|(df[TaskTupleVar].str.len()<=2),TaskTupleVar] = "[]"
     df[TaskTupleVar+'_list'] = df[TaskTupleVar].apply(eval)
     df_Tasks_AsCols = df[TaskTupleVar+'_list'].apply(pd.Series)
     MaxNumTasks = len(df_Tasks_AsCols.columns)

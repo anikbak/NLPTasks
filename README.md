@@ -5,5 +5,5 @@ Codes to apply an extension of the method in Webb (2020) to extract Tasks from t
 
 ## Steps Involved
 
-* Step 1: Using SpaCy's DependencyParser and the ``en_core_web_sm`` model, add dependency and parts-of-speech tags to all tokens in a text. 
+* Step 1: Using SpaCy's DependencyParser and the ``en_core_web_trf`` model, add dependency and parts-of-speech tags to all tokens in a text. 
 * Step 2: For all words identified as verbs by the POS Tagger, identify the first direct object that lies on the verb's subtree constructed by the .head relationship. 

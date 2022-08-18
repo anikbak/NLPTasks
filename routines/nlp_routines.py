@@ -3,12 +3,13 @@
 ##########################################################
 
 # Imports
-import spacy, numpy as np, pandas as pd 
+import spacy, numpy as np, pandas as pd
+from spacy.language import Language 
 from nltk.corpus import wordnet as wn
 from joblib import Parallel, delayed 
 
 # Initialize NLP 
-nlp = spacy.load('en_core_web_trf',disable=["ner","entity_linker","entity_ruler","lemmatizer"])
+nlp = spacy.load('en_core_web_trf',disable=["ner","entity_linker","entity_ruler"])
 
 # Routines for dependency parse and noun/verb extraction
 def VerbNounPairs(doc):
@@ -27,20 +28,20 @@ def VerbNounPairs(doc):
         for tok in verb.subtree :
             if tok.dep_ == "dobj":
                 dobjs.append(tok)
-                verbnounsD.append((verb.text,tok.text))
+                verbnounsD.append((verb.lemma_,tok.text))
                 ObjectTree = tok.subtree
                 for o in ObjectTree:
                     if o.pos_ == "NOUN" and o.dep_ == "conj" and o.head.dep_ != "pobj" and o.dep_ != "pobj":
-                        verbnounsD.append((verb.text,o.text))
+                        verbnounsD.append((verb.lemma_,o.text))
                 break 
         
         # If no direct object was found, search for prepositional objects
         if dobjs == []:
             for tok in verb.subtree : 
                 if tok.dep_ == "pobj" and tok.pos_ == 'NOUN' and tok.head.head.pos_ == "VERB":
-                    verbnounsP.append((verb.text,tok.head.text,tok.text))
- 
-    return verbnounsD, verbnounsP 
+                    verbnounsP.append((verb.lemma_,tok.head.text,tok.text))
+    
+    return verbnounsD, verbnounsP
 
 def VerbNounPairs_Pipe(documentTuples):
     '''
@@ -107,7 +108,7 @@ def word2level(word_text,pos=wn.NOUN,level=5):
                     minDepth = word_current.min_depth() 
             return word_current.lemmas()[0].name(),minDepth
 
-# Full Workflow for Tasks 
+# Full Workflow for Task Extraction
 def iterable2chunks(iterable,total_length,chunksize):
     return (iterable[pos:pos+chunksize] for pos in range(0,total_length,chunksize))
 
@@ -181,13 +182,20 @@ def Text2TasksDict_Parallelized(df,TaskVar='Task',chunksize=1000,joblib_n_jobs=-
     result = executor(tasks)
     return flatten_dict(result)
 
-def Text2Tasks_Parallelized(df,TaskVar='Task',chunksize=1000,WordNetLevelMin=3,WordNetLevelMax=6):
+def Text2Tasks_Parallelized(df,TaskVar='Task',chunksize=1000,joblib_n_jobs=-1,joblib_parallel_backend='loky',joblib_parallel_prefer='processes',WordNetLevelMin=3,WordNetLevelMax=6):
+
+    # Preallocate
+    df2 = df.copy()
 
     # Get Dictionary of Tuples
-    Tasks_dobj = Text2TasksDict_Parallelized(df,TaskVar=TaskVar,chunksize=chunksize)
-    
-    # Lemmatize verbs  
-    Tasks_dobj = {k : [(Tasks_dobj[k][p][0].lemma_,Tasks_dobj[k][p][1]) for p in range(len(Tasks_dobj[k]))] for k in Tasks_dobj if Tasks_dobj[k] != []}    
+    if len(df.index) <= 2*chunksize: 
+        joblib_n_jobs = 1
+
+    Tasks_dobj = Text2TasksDict_Parallelized(df,TaskVar=TaskVar,
+                                                chunksize=chunksize,
+                                                joblib_n_jobs=joblib_n_jobs,
+                                                joblib_parallel_backend=joblib_parallel_backend,
+                                                joblib_parallel_prefer=joblib_parallel_prefer)
      
     # Raw Tasks
     Tasks_dobj_df = pd.DataFrame.from_dict({k: str(Tasks_dobj[k]) for k in Tasks_dobj},orient='index',columns=['VerbNouns_dobj'])
@@ -200,14 +208,44 @@ def Text2Tasks_Parallelized(df,TaskVar='Task',chunksize=1000,WordNetLevelMin=3,W
     for l in hierarchyLevels:
         
         # Store in Hierarchy Dictionaries
-        hierarchies_dobj[l] = {k : str([(Tasks_dobj[k][p][0],word2level(Tasks_dobj[k][p][1].text,level=l)[0]) for p in range(len(Tasks_dobj[k]))]) for k in Tasks_dobj if Tasks_dobj[k] != []}
+        hierarchies_dobj[l] = {k : str([(Tasks_dobj[k][p][0],word2level(Tasks_dobj[k][p][1],level=l)[0]) for p in range(len(Tasks_dobj[k]))]) for k in Tasks_dobj if Tasks_dobj[k] != []}
 
         # Construct DataFrames
         Tasks_dobj_df = pd.DataFrame.from_dict(hierarchies_dobj[l],orient='index',columns=['VerbNouns_dobj_NounLevel_'+str(l)])
         df2 = df2.merge(Tasks_dobj_df,how='outer',left_index=True,right_index=True,indicator='merge_verbnouns_level_'+str(l))
 
     return Tasks_dobj, hierarchies_dobj, df2
+     
+# For analysis of tasks and most common tasks by year, construct dataset at the Occupation by Extracted Task level 
+def DataOccTaskLevel(df,OccVar="O*NET-SOC Code",otherVars=['Task ID','Task Type','Incumbents Responding','Domain Source'],WordNetLevel=None,TaskVar='Task',NewTaskVar='Occupation_VerbNouns'):
+    '''
+    Construct a dataset of occupations and tasks. 
+    *********************************************
+    df: DataFrame containing at least the columns OccVar, TaskVar, VerbNouns_dobj_NounLevel_+str(WordNetLevel) 
+    '''
+    # Variable
+    if WordNetLevel is None:
+        TaskTupleVar = 'VerbNouns_dobj'
+    else:
+        TaskTupleVar = 'VerbNouns_dobj_NounLevel_'+str(WordNetLevel)
+
+    # Split up Tasks
+    df[TaskTupleVar+'_list'] = df[TaskTupleVar].apply(eval)
+    df_Tasks_AsCols = df[TaskTupleVar+'_list'].apply(pd.Series)
+    MaxNumTasks = len(df_Tasks_AsCols.columns)
+    df_Tasks_AsCols = df_Tasks_AsCols.rename(columns={c:'Task_'+str(c) for c in df_Tasks_AsCols.columns})
+    df = df.merge(df_Tasks_AsCols,left_index=True,right_index=True,indicator='_m_TaskCols',how='outer')
+
+    # Reshape and build a new DataFrame to prepare for collapse 
+    df_ = pd.DataFrame(columns=[OccVar,TaskVar,TaskTupleVar,NewTaskVar,'OrigTaskIndex']+otherVars)
     
+    for i in range(MaxNumTasks):
+        dfTemp = df[[OccVar,TaskVar,TaskTupleVar,TaskTupleVar+'_list','Task_'+str(i)]+otherVars].copy()
+        dfTemp = dfTemp.loc[pd.notna(dfTemp['Task_'+str(i)])]
+        if len(dfTemp.index)>0:
+            dfTemp = dfTemp.rename(columns={'Task_'+str(i) : NewTaskVar})
+            dfTemp['OrigTaskIndex'] = i
+            df_ = df_.append(dfTemp,sort=False) 
 
-
+    return df_
 

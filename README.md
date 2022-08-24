@@ -9,3 +9,48 @@ Codes to apply an extension of the method in Webb (2020) to extract Tasks from t
 * Step 2: For all words identified as verbs by the POS Tagger, identify the first direct object that lies on the verb's subtree defined by the .head relationship. 
 * Step 3: Use SpaCy's Lemmatizer to lemmatize verbs. 
 * Step 4: Use NLTK's WordNet Corpus to translate nouns to a common level of generality (WordNet Level 4). 
+
+## Similarity Matrices
+
+Once verb-noun tasks have been extracted from the O*NET Data, we can do cool stuff with this representation of occupations.Here's a natural one: How "similar" are different occupations? 
+
+To answer this, here's one approach based on the idea of TF-IDF Measures. Let $$t=1,2,\dots,T$$ index verb-noun tasks and $$o=1,2,\dots,O$$ index occupations. Let $$w(o) = [w(o,1),w(o,2),\dots,w(o,T)] \in \mathbb{R}^T$$ be the vector of loadings on tasks $$t=1,2,\dots,T$$ for occupation $$o$$. These loadings are constructed as follows. 
+
+* Pick an appropriate scale from O*NET for each raw task associated with each occupation. There are two scales, importance and relevance. Let $$w(o,\hat{t})$$ be the scale value of raw task $$\hat{t}$$ for occupation $$o$$. If $$w(o,\hat{t})>0$$ I will use the notation $$\hat{t}\in o$$.
+
+* After the decomposition of raw task $$\hat{t}$$ into verb-noun tasks, I will use the notation $$t\in \hat{t}$$ if verb-noun task $$t$$ was extracted from raw task $$\hat{t}$$. The notation $$t\in o$$ will indicate that $$t\in\hat{t}$$ for at least one $$\hat{t}\in o$$.
+
+* Construct a scale value for each verb-noun task by taking the mean scale value across all raw tasks within an occupation mentioning that verb-noun task. That is, for verb-noun task $$t$$, 
+
+\begin{equation}
+w(o,t) = \frac{1}{N(o,t)}\sum_{\hat{t} : t \in \hat{t}, \hat{t} \in o} w(o,\hat{t})
+\end{equation}
+
+where $$N(o,t) = \sum_{\hat{t} : t \in \hat{t}, \hat{t} \in o} \mathbf{1}$$.
+
+* Construct the Weighted Term Frequency of task $$t$$ for occupation $$o$$ using the formula
+
+\begin{equation}
+W_{TF}(o,t) = \frac{w(o,t)}{\sum_{t\in o^{\prime}} w(o^{\prime},t)}
+\end{equation}
+
+* Construct the Inverse Document Frequency of task $$t$$ using the formula 
+
+\begin{equation}
+W_{IDF}(t) = \log\left(1 + \frac{O}{\sum_{o=1}^O \mathbf{1}(t \in o)}\right)
+\end{equation}
+
+* Construct the TF-IDF Scores $$w(o,t) = W_{TF}(o,t)\times W_{IDF}(t)$$. 
+
+The TF-IDF Scores give us a vector representation of each occupation in terms of the space of extracted tasks. We can now use these scores to compute the similarity between two occupations. I compute two different measures:
+
+* The Cosine Similarity, defined by 
+\begin{equation}
+CosSim(o,o^{prime}) = \frac{w(o)\cdot w(o^{\prime})}{\vert w(o)\vert\times\vert w(o^{\prime})\vert}
+\end{equation}
+where $$\vert w(o) \vert = \sqrt{\sum_{t=1}^T w(o,t)^2}$$ and $$w(o)\cdot w(o^{\prime})$$ is the vector dot product, $$\sum_{t=0}^T w(o,t)w(o^{\prime},t)$$.
+
+* The Fraction Similarity, defined by 
+\begin{equation}
+CosSim(o,o^{prime}) = \frac{\mathbf{1}(w(o)>0)\cdot\mathbf{1}(w(o^{\prime})>0)}{T}
+\end{equation}

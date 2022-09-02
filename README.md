@@ -32,7 +32,7 @@ $$ W_{TF}(o,t) = \frac{w(o,t)}{\sum_{t\in o^{\prime}} w(o^{\prime},t)} $$
 
 * Construct the Inverse Document Frequency of task $t$ using the formula 
 
-$$ W_{IDF}(t) = \log\left(1 + \frac{O}{ \sum_{o=1}^{O} \mathbf{1}\left(t \in o \right)} \right) $$
+$$ W_{IDF}(t) = \log\left(1 + \frac{O}{ \sum_{o=1,\dots,O} \mathbf{1}\left(t \in o \right)} \right) $$
 
 * Construct the TF-IDF Scores $$w(o,t) = W_{TF}(o,t)\times W_{IDF}(t)$$. 
 

@@ -41,7 +41,7 @@ The TF-IDF Scores give us a vector representation of each occupation in terms of
 * The Cosine Similarity, defined by 
 $$CosSim(o,o^{prime}) = \frac{w(o)\cdot w(o^{\prime})}{\vert w(o)\vert\times\vert w(o^{\prime})\vert}$$
 
-where $\vert w(o) \vert = \sqrt{\sum_{t=1}^T w(o,t)^2}$ and $w(o)\cdot w(o^{\prime})$ is the vector dot product, $\sum_{t=0}^T w(o,t)w(o^{\prime},t)$.
+where $$ \vert w(o) \vert = \sqrt{\sum_{t=1}^T w(o,t)^2}$$ and $$ w(o)\cdot w(o^{\prime}) = \sum_{t=0}^T w(o,t)w(o^{\prime},t)$$.
 
 * The Fraction Similarity, defined by 
 $$FracSim(o,o^{prime}) = \frac{\mathbf{1}(w(o)>0)\cdot\mathbf{1}(w(o^{\prime})>0)}{T}$$

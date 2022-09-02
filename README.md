@@ -22,7 +22,7 @@ To answer this, here's one approach based on the idea of TF-IDF Measures. Let $t
 
 * Construct a scale value for each verb-noun task by taking the mean scale value across all raw tasks within an occupation mentioning that verb-noun task. That is, for verb-noun task $t$, 
 
-$$ w(o,t) = \frac{1}{N(o,t)}\sum_{\hat{t} \; : \; t \in \hat{t}, \; \hat{t} \in o} w\left( o,\hat{t} \right) $$
+$$ w(o,t) = \frac{1}{N(o,t)}\sum_{\hat{t} : t \in \hat{t}, \hat{t} \in o} w\left( o,\hat{t} \right) $$
 
 where $N(o,t) = \sum_{\hat{t} : t \in \hat{t}, \hat{t} \in o} \mathbf{1}$.
 

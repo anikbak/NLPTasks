@@ -26,7 +26,7 @@ To answer this, here's one approach based on the idea of TF-IDF Measures. Let $$
 w(o,t) = \frac{1}{N(o,t)}\sum_{\hat{t} : t \in \hat{t}, \hat{t} \in o} w(o,\hat{t})
 \end{equation}
 
-where $$N(o,t) = \sum_{\hat{t} : t \in \hat{t}, \hat{t} \in o} \mathbf{1}$$.
+where $N(o,t) = \sum_{\hat{t} : t \in \hat{t}, \hat{t} \in o} \mathbf{1}$.
 
 * Construct the Weighted Term Frequency of task $$t$$ for occupation $$o$$ using the formula
 

@@ -16,9 +16,9 @@ Once verb-noun tasks have been extracted from the O*NET Data, we can do cool stu
 
 To answer this, here's one approach based on the idea of TF-IDF Measures. Let $t=1,2,\dots,T$ index verb-noun tasks and $o=1,2,\dots,O$ index occupations. Let $w(o) = [w(o,1),w(o,2),\dots,w(o,T)] \in \mathbb{R}^T $ be the vector of loadings on tasks $t=1,2,\dots,T$ for occupation $o$. These loadings are constructed as follows. 
 
-* Pick an appropriate scale from O*NET for each raw task associated with each occupation. There are two scales, importance and relevance. Let $w(o,\hat{t})$ be the scale value of raw task $\hat{t}$ for occupation $o$. If $w(o,\hat{t})>0$ I will use the notation $\hat{t}\in o$.
+* Pick an appropriate scale from O\*NET for each raw task associated with each occupation. There are two scales, importance and relevance. Let $w(o,\hat{t})$ be the scale value of raw task $\hat{t}$ for occupation $o$. If $w(o,\hat{t})>0$ I will use the notation $\hat{t}\in o$.
 
-* After the decomposition of raw task $$\hat{t}$$ into verb-noun tasks, I will use the notation $$t\in \hat{t}$$ if verb-noun task $$t$$ was extracted from raw task $\hat{t}$. The notation $$t\in o$$ will indicate that $$t\in\hat{t}$$ for at least one $$\hat{t}\in o$$.
+* After the decomposition of raw task $$\hat{t}$$ into verb-noun tasks, I will use the notation $$t\in \hat{t}$$ if verb-noun task $$t$$ was extracted from raw task $\hat{t}$. The notation $t\in o$ will indicate that $$t\in\hat{t}$$ for at least one $$\hat{t}\in o$$.
 
 * Construct a scale value for each verb-noun task by taking the mean scale value across all raw tasks within an occupation mentioning that verb-noun task. That is, for verb-noun task $t$, 
 
